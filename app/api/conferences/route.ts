@@ -1,141 +1,156 @@
-export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 import dbConnect from "@/lib/mongodb"
 import Conference from "@/models/Conference"
 import Category from "@/models/Category"
 import Speaker from "@/models/Speaker"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import Enrollment from "@/models/Enrollment" // Make sure Enrollment model is imported
 
-export async function GET(req: Request) {
+// Get a single conference by ID
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log("Starting conference fetch...")
+    const { id } = await params
+
     await dbConnect()
-    console.log("Database connected successfully")
 
     // Ensure Speaker model is registered
     console.log("Speaker model registered:", !!Speaker)
 
-    const { searchParams } = new URL(req.url)
-    const category = searchParams.get("category")
-    const hashtag = searchParams.get("hashtag")
+    const conference = await Conference.findById(id).populate("category", "name").populate("createdBy", "name email")
 
-    let query = {}
+    if (!conference) {
+      return NextResponse.json({ success: false, message: "Conference not found" }, { status: 404 })
+    }
 
-    if (category) {
-      console.log("Filtering by category:", category)
-      const categoryDoc = await Category.findOne({ name: category })
-      if (categoryDoc) {
-        query = { ...query, category: categoryDoc._id }
+    // Manually populate speakers to avoid schema error
+    const conferenceData = conference.toObject()
+
+    if (conferenceData.speakersID && conferenceData.speakersID.length > 0) {
+      try {
+        const speakers = await Speaker.find({ _id: { $in: conferenceData.speakersID } })
+        conferenceData.speakersID = speakers
+      } catch (speakerError) {
+        console.log("Speaker population error:", speakerError)
+        conferenceData.speakersID = []
       }
+    } else {
+      conferenceData.speakersID = []
     }
 
-    if (hashtag) {
-      console.log("Filtering by hashtag:", hashtag)
-      query = { ...query, hashTags: hashtag }
+    const session = await getServerSession(authOptions) // Make sure authOptions is imported
+    let isEnrolled = false
+
+    if (session?.user?.id && session.user.role === "guest") {
+      const enrollment = await Enrollment.findOne({
+        // Make sure Enrollment model is imported
+        guestID: session.user.id,
+        conferenceID: conferenceData._id,
+      })
+      isEnrolled = !!enrollment
     }
 
-    console.log("Query:", query)
-
-    // Fetch conferences with proper speaker population
-    const conferences = await Conference.find(query)
-      .populate("category", "name")
-      .populate("createdBy", "name email")
-      .populate("speakersID", "name surname bio profileImage")
-      .sort({ startDate: 1 })
-
-    console.log("Conferences found:", conferences.length)
-
-    // Convert to plain objects
-    const conferencesData = conferences.map((conf) => {
-      const confObj = conf.toObject()
-      return confObj
-    })
-
-    console.log("Successfully processed conferences")
-    return NextResponse.json({ success: true, data: conferencesData })
+    // Add to the response
+    return NextResponse.json({ success: true, data: { ...conferenceData, isEnrolled } })
   } catch (error) {
-    console.error("Detailed error fetching conferences:", error)
-    console.error("Error name:", error.name)
-    console.error("Error message:", error.message)
-    console.error("Error stack:", error.stack)
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to fetch conferences",
-        error: error.message,
-        errorName: error.name,
-      },
-      { status: 500 },
-    )
+    console.error("Error fetching conference:", error)
+    return NextResponse.json({ success: false, message: "Failed to fetch conference" }, { status: 500 })
   }
 }
 
-export async function POST(req: Request) {
+// Update a conference
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
 
-    if (!session) {
+    if (!session || session.user.role !== "user") {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
     }
 
-    const {
-      title,
-      description,
-      category,
-      hashTags,
-      startDate,
-      endDate,
-      location,
-      image,
-      speakersID,
-      ticketPrice,
-      currency,
-      maxAttendees,
-    } = await req.json()
+    const updateData = await req.json()
 
-    // Validate input
-    if (
-      !title ||
-      !description ||
-      !category ||
-      !startDate ||
-      !endDate ||
-      !location ||
-      ticketPrice === undefined ||
-      !maxAttendees
-    ) {
-      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
+    await dbConnect()
+
+    // Check if conference exists and belongs to the user
+    const conference = await Conference.findById(id)
+
+    if (!conference) {
+      return NextResponse.json({ success: false, message: "Conference not found" }, { status: 404 })
+    }
+
+    if (conference.createdBy.toString() !== session.user.id) {
+      return NextResponse.json({ success: false, message: "Not authorized to update this conference" }, { status: 403 })
+    }
+
+    // Handle category - find or create if it's a string
+    if (updateData.category) {
+      if (typeof updateData.category === "string") {
+        let categoryDoc = await Category.findOne({ name: updateData.category })
+
+        if (!categoryDoc) {
+          categoryDoc = await Category.create({ name: updateData.category })
+        }
+
+        updateData.category = categoryDoc._id
+      }
+    }
+
+    // Update conference
+    const updatedConference = await Conference.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+      .populate("category", "name")
+      .populate("createdBy", "name email")
+
+    // Manually populate speakers
+    const conferenceData = updatedConference.toObject()
+
+    if (conferenceData.speakersID && conferenceData.speakersID.length > 0) {
+      try {
+        const speakers = await Speaker.find({ _id: { $in: conferenceData.speakersID } })
+        conferenceData.speakersID = speakers
+      } catch (speakerError) {
+        console.log("Speaker population error:", speakerError)
+        conferenceData.speakersID = []
+      }
+    } else {
+      conferenceData.speakersID = []
+    }
+
+    return NextResponse.json({ success: true, data: conferenceData })
+  } catch (error) {
+    console.error("Error updating conference:", error)
+    return NextResponse.json({ success: false, message: "Failed to update conference" }, { status: 500 })
+  }
+}
+
+// Delete a conference
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const session = await getServerSession(authOptions)
+
+    if (!session || session.user.role !== "user") {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
     }
 
     await dbConnect()
 
-    // Find or create category
-    let categoryDoc = await Category.findOne({ name: category })
+    // Check if conference exists and belongs to the user
+    const conference = await Conference.findById(id)
 
-    if (!categoryDoc) {
-      categoryDoc = await Category.create({ name: category })
+    if (!conference) {
+      return NextResponse.json({ success: false, message: "Conference not found" }, { status: 404 })
     }
 
-    const conference = await Conference.create({
-      title,
-      description,
-      category: categoryDoc._id,
-      hashTags: hashTags || [],
-      startDate,
-      endDate,
-      location,
-      image: image || "",
-      speakersID: speakersID || [],
-      ticketPrice: ticketPrice || 0,
-      currency: currency || "USD",
-      maxAttendees: maxAttendees || 100,
-      createdBy: session.user.id,
-    })
+    if (conference.createdBy.toString() !== session.user.id) {
+      return NextResponse.json({ success: false, message: "Not authorized to delete this conference" }, { status: 403 })
+    }
 
-    return NextResponse.json({ success: true, data: conference }, { status: 201 })
+    await Conference.findByIdAndDelete(id)
+
+    return NextResponse.json({ success: true, message: "Conference deleted successfully" })
   } catch (error) {
-    console.error("Error creating conference:", error)
-    return NextResponse.json({ success: false, message: "Failed to create conference" }, { status: 500 })
+    console.error("Error deleting conference:", error)
+    return NextResponse.json({ success: false, message: "Failed to delete conference" }, { status: 500 })
   }
 }

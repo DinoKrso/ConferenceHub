@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
@@ -73,7 +72,7 @@ export async function PUT(req: Request) {
     }
 
     const updateData = await req.json()
-    const { name, phoneNumber, bio, location, website, company, jobTitle } = updateData
+    const { name, phoneNumber, bio, location, website, company, jobTitle, profileImage } = updateData
 
     // Validate input
     if (!name || name.trim().length === 0) {
@@ -83,7 +82,7 @@ export async function PUT(req: Request) {
     await dbConnect()
 
     let user
-    const fieldsToUpdate = {
+    const fieldsToUpdate: any = {
       name: name.trim(),
       phoneNumber: phoneNumber || "",
       bio: bio || "",
@@ -91,6 +90,10 @@ export async function PUT(req: Request) {
       website: website || "",
       company: company || "",
       jobTitle: jobTitle || "",
+    }
+
+    if (profileImage) {
+      fieldsToUpdate.profileImage = profileImage
     }
 
     if (session.user.role === "user") {
