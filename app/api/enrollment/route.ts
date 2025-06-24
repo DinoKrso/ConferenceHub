@@ -4,6 +4,7 @@
  * Note: This implementation allows users to register for conferences without payment.
  * Payment processing will be added in a future update.
  */
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
