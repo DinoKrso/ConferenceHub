@@ -32,7 +32,7 @@ export default function CreateConferencePage() {
   const [venueLocation, setVenueLocation] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const { session, isUser } = useAuth()
+  const { session, isUser, loading: authLoading } = useAuth()
   const router = useRouter()
   const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([])
   const [speakers, setSpeakers] = useState<Array<{ _id: string; name: string; surname: string }>>([])
@@ -59,10 +59,19 @@ export default function CreateConferencePage() {
     fetchSpeakers()
   }, [])
 
-  // Redirect if not logged in or not a conference organizer
-  if (!session || !isUser) {
-    router.push("/login")
-    return null
+  useEffect(() => {
+    if (!authLoading) {
+      if (!session || !isUser) {
+        router.push("/login")
+      }
+    }
+  }, [session, isUser, authLoading, router])
+
+  if (authLoading || !session || (session && !isUser)) {
+    // If auth is loading, or no session, or session exists but not an authorized user,
+    // show a loading/placeholder. The useEffect will handle the redirect.
+    // This prevents the main form from rendering and potentially causing SSR issues.
+    return <div className="container mx-auto px-4 py-8 text-center">Authorizing...</div>
   }
 
   const addHashtag = () => {

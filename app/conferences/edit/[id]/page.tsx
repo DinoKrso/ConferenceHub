@@ -62,64 +62,85 @@ export default function EditConferencePage({ params }: EditConferencePageProps) 
   const [loading, setLoading] = useState(false)
   const [fetchLoading, setFetchLoading] = useState(true)
   const [error, setError] = useState("")
-  const { session, isUser } = useAuth()
+  const { session, isUser, loading: authLoading } = useAuth()
   const router = useRouter()
   const [bannerImage, setBannerImage] = useState<string>("")
   const [uploadingImage, setUploadingImage] = useState(false)
 
   useEffect(() => {
-    if (!session || !isUser) {
-      router.push("/login")
-      return
-    }
-
-    const fetchConference = async () => {
-      try {
-        const response = await fetch(`/api/conferences/${params.id}`)
-        const data = await response.json()
-
-        if (data.success) {
-          const conf = data.data
-          setConference(conf)
-          setTitle(conf.title)
-          setDescription(conf.description)
-          setCategory(conf.category.name)
-          setHashtags(conf.hashTags || [])
-          setStartDate(new Date(conf.startDate))
-          setEndDate(new Date(conf.endDate))
-          setVenueLocation(conf.location)
-          setTicketPrice(String(conf.ticketPrice || 0))
-          setCurrency(conf.currency || "USD")
-          setMaxAttendees(String(conf.maxAttendees || 100))
-          setSelectedSpeakers(conf.speakersID || [])
-          setBannerImage(conf.image || "")
-        } else {
-          setError("Conference not found")
-        }
-      } catch (error) {
-        console.error("Error fetching conference:", error)
-        setError("Failed to load conference")
-      } finally {
-        setFetchLoading(false)
+    if (!authLoading) {
+      // Only proceed once auth state is known
+      if (!session || !isUser) {
+        router.push("/login")
+        return // Stop further execution in this effect
       }
-    }
 
-    const fetchSpeakers = async () => {
-      try {
-        const response = await fetch("/api/speakers")
-        const data = await response.json()
+      // Fetch conference and speakers data (this part is fine)
+      const fetchConferenceAndSpeakers = async () => {
+        setFetchLoading(true) // Start data fetching loading state
+        try {
+          const [confResponse, spkResponse] = await Promise.all([
+            fetch(`/api/conferences/${params.id}`),
+            fetch("/api/speakers"),
+          ])
 
-        if (data.success) {
-          setSpeakers(data.data)
+          const confData = await confResponse.json()
+          if (confData.success) {
+            const conf = confData.data
+            setConference(conf)
+            setTitle(conf.title)
+            setDescription(conf.description)
+            setCategory(conf.category.name)
+            setHashtags(conf.hashTags || [])
+            setStartDate(new Date(conf.startDate))
+            setEndDate(new Date(conf.endDate))
+            setVenueLocation(conf.location)
+            setTicketPrice(String(conf.ticketPrice || 0))
+            setCurrency(conf.currency || "USD")
+            setMaxAttendees(String(conf.maxAttendees || 100))
+            setSelectedSpeakers(conf.speakersID || [])
+            setBannerImage(conf.image || "")
+          } else {
+            setError("Conference not found")
+          }
+
+          const spkData = await spkResponse.json()
+          if (spkData.success) {
+            setSpeakers(spkData.data)
+          } else {
+            console.error("Error fetching speakers:", spkData.message)
+          }
+        } catch (error) {
+          console.error("Error fetching conference/speakers:", error)
+          setError("Failed to load conference data")
+        } finally {
+          setFetchLoading(false) // End data fetching loading state
         }
-      } catch (error) {
-        console.error("Error fetching speakers:", error)
       }
-    }
 
-    fetchConference()
-    fetchSpeakers()
-  }, [params.id, session, isUser, router])
+      fetchConferenceAndSpeakers()
+    }
+  }, [params.id, session, isUser, authLoading, router]) // Added authLoading to dependencies
+
+  if (authLoading) {
+    return <div className="container mx-auto px-4 py-8 text-center">Authorizing...</div>
+  }
+  // At this point, authLoading is false.
+  // The useEffect will handle redirection if !session || !isUser.
+  // If it's going to redirect, we can show a placeholder.
+  if (!session || !isUser) {
+    // This state will be brief as useEffect redirects.
+    return <div className="container mx-auto px-4 py-8 text-center">Verifying access...</div>
+  }
+
+  // Now, proceed with data fetching state
+  if (fetchLoading) {
+    return <div className="container mx-auto px-4 py-8 text-center">Loading conference data...</div>
+  }
+
+  if (!conference) {
+    return <div className="container mx-auto px-4 py-8 text-center">{error || "Conference not found"}</div>
+  }
 
   const addHashtag = () => {
     if (hashtagInput.trim() && !hashtags.includes(hashtagInput.trim())) {
@@ -234,14 +255,6 @@ export default function EditConferencePage({ params }: EditConferencePageProps) 
     } finally {
       setLoading(false)
     }
-  }
-
-  if (fetchLoading) {
-    return <div className="container mx-auto px-4 py-8">Loading conference...</div>
-  }
-
-  if (!conference) {
-    return <div className="container mx-auto px-4 py-8">Conference not found</div>
   }
 
   return (
