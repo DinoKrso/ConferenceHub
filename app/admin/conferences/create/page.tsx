@@ -18,6 +18,10 @@ import Link from "next/link"
 
 export default function CreateConferencePage() {
   const [activeTab, setActiveTab] = useState("basic")
+  const [startDate, setStartDate] = useState<Date | undefined>()
+  const [endDate, setEndDate] = useState<Date | undefined>()
+  const [registrationStartDate, setRegistrationStartDate] = useState<Date | undefined>()
+  const [registrationEndDate, setRegistrationEndDate] = useState<Date | undefined>()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -206,11 +210,11 @@ export default function CreateConferencePage() {
                     <div className="grid gap-6 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label>Start Date</Label>
-                        <DatePicker />
+                        <DatePicker date={startDate} setDate={setStartDate} />
                       </div>
                       <div className="space-y-2">
                         <Label>End Date</Label>
-                        <DatePicker />
+                        <DatePicker date={endDate} setDate={setEndDate} />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -373,11 +377,11 @@ export default function CreateConferencePage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="registrationStart">Registration Start Date</Label>
-                      <DatePicker />
+                      <DatePicker date={registrationStartDate} setDate={setRegistrationStartDate} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="registrationEnd">Registration End Date</Label>
-                      <DatePicker />
+                      <DatePicker date={registrationEndDate} setDate={setRegistrationEndDate} />
                     </div>
                     <div className="flex justify-between">
                       <Button type="button" variant="outline" onClick={() => setActiveTab("media")}>
