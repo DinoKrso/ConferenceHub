@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Or remove this typescript block entirely
   },
   images: {
     domains: ['i.ibb.co', 'via.placeholder.com'],
