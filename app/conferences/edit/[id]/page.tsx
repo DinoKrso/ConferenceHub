@@ -1,5 +1,5 @@
 "use client"
-export const dynamic = "force-dynamic";
+
 import type React from "react"
 
 import { useState, useEffect } from "react"
@@ -53,7 +53,7 @@ export default function EditConferencePage({ params }: EditConferencePageProps) 
   const [hashtagInput, setHashtagInput] = useState("")
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [endDate, setEndDate] = useState<Date | undefined>()
-  const [location, setLocation] = useState("")
+  const [venueLocation, setVenueLocation] = useState("")
   const [ticketPrice, setTicketPrice] = useState<string>("0")
   const [currency, setCurrency] = useState("USD")
   const [maxAttendees, setMaxAttendees] = useState<string>("100")
@@ -87,7 +87,7 @@ export default function EditConferencePage({ params }: EditConferencePageProps) 
           setHashtags(conf.hashTags || [])
           setStartDate(new Date(conf.startDate))
           setEndDate(new Date(conf.endDate))
-          setLocation(conf.location)
+          setVenueLocation(conf.location)
           setTicketPrice(String(conf.ticketPrice || 0))
           setCurrency(conf.currency || "USD")
           setMaxAttendees(String(conf.maxAttendees || 100))
@@ -180,7 +180,7 @@ export default function EditConferencePage({ params }: EditConferencePageProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!title || !description || !category || !startDate || !endDate || !location) {
+    if (!title || !description || !category || !startDate || !endDate || !venueLocation) {
       setError("Please fill in all required fields")
       return
     }
@@ -209,7 +209,7 @@ export default function EditConferencePage({ params }: EditConferencePageProps) 
           hashTags: hashtags,
           startDate,
           endDate,
-          location,
+          location: venueLocation,
           ticketPrice: priceValue,
           currency,
           maxAttendees: maxAttendeesValue,
@@ -326,8 +326,8 @@ export default function EditConferencePage({ params }: EditConferencePageProps) 
               <Input
                 id="location"
                 placeholder="Enter venue name and city"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                value={venueLocation}
+                onChange={(e) => setVenueLocation(e.target.value)}
                 required
               />
             </div>

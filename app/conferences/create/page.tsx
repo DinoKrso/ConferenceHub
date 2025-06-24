@@ -1,4 +1,5 @@
-"use client";
+"use client"
+
 import type React from "react"
 
 import { useState, useEffect } from "react"
@@ -28,7 +29,7 @@ export default function CreateConferencePage() {
   const [hashtagInput, setHashtagInput] = useState("")
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [endDate, setEndDate] = useState<Date | undefined>()
-  const [location, setLocation] = useState("")
+  const [venueLocation, setVenueLocation] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const { session, isUser } = useAuth()
@@ -128,7 +129,7 @@ export default function CreateConferencePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!title || !description || !category || !startDate || !endDate || !location) {
+    if (!title || !description || !category || !startDate || !endDate || !venueLocation) {
       setError("Please fill in all required fields")
       return
     }
@@ -168,7 +169,7 @@ export default function CreateConferencePage() {
           hashTags: hashtags,
           startDate,
           endDate,
-          location,
+          location: venueLocation,
           speakersID: selectedSpeakers,
           ticketPrice: priceValue,
           currency,
@@ -273,12 +274,12 @@ export default function CreateConferencePage() {
                 <div className="flex items-center gap-2">
                   <div
                     className={`flex h-5 w-5 items-center justify-center rounded-full ${
-                      startDate && endDate && location && ticketPrice !== "" && maxAttendees !== ""
+                      startDate && endDate && venueLocation && ticketPrice !== "" && maxAttendees !== ""
                         ? "bg-green-100 text-green-600"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {startDate && endDate && location && ticketPrice !== "" && maxAttendees !== "" ? (
+                    {startDate && endDate && venueLocation && ticketPrice !== "" && maxAttendees !== "" ? (
                       <Check className="h-3 w-3" />
                     ) : (
                       <span className="text-xs">2</span>
@@ -414,8 +415,8 @@ export default function CreateConferencePage() {
                         <Input
                           id="location"
                           placeholder="Enter venue name and city (e.g., Convention Center, New York)"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
+                          value={venueLocation}
+                          onChange={(e) => setVenueLocation(e.target.value)}
                           required
                         />
                       </div>
