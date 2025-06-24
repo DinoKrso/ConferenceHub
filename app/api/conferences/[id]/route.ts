@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
@@ -6,11 +5,12 @@ import dbConnect from "@/lib/mongodb"
 import Conference from "@/models/Conference"
 import Category from "@/models/Category"
 import Speaker from "@/models/Speaker"
+import Enrollment from "@/models/Enrollment" // Make sure Enrollment model is imported
 
 // Get a single conference by ID
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
+    const { id } = params
 
     await dbConnect()
 
@@ -38,7 +38,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       conferenceData.speakersID = []
     }
 
-    return NextResponse.json({ success: true, data: conferenceData })
+    const session = await getServerSession(authOptions) // Make sure authOptions is imported
+    let isEnrolled = false
+
+    if (session?.user?.id && session.user.role === "guest") {
+      const enrollment = await Enrollment.findOne({
+        // Make sure Enrollment model is imported
+        guestID: session.user.id,
+        conferenceID: conferenceData._id,
+      })
+      isEnrolled = !!enrollment
+    }
+
+    // Add to the response
+    return NextResponse.json({ success: true, data: { ...conferenceData, isEnrolled } })
   } catch (error) {
     console.error("Error fetching conference:", error)
     return NextResponse.json({ success: false, message: "Failed to fetch conference" }, { status: 500 })
@@ -46,9 +59,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // Update a conference
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
+    const { id } = params
     const session = await getServerSession(authOptions)
 
     if (!session || session.user.role !== "user") {
@@ -111,9 +124,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // Delete a conference
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
+    const { id } = params
     const session = await getServerSession(authOptions)
 
     if (!session || session.user.role !== "user") {
