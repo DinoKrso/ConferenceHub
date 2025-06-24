@@ -55,15 +55,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, data: conferencesData })
   } catch (error) {
     console.error("Detailed error fetching conferences:", error)
-    console.error("Error name:", error.name)
-    console.error("Error message:", error.message)
-    console.error("Error stack:", error.stack)
+
+    // Safely handle the error object
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const errorName = error instanceof Error ? error.name : "Error"
+    const errorStack = error instanceof Error ? error.stack : undefined
+
+    console.error("Error name:", errorName)
+    console.error("Error message:", errorMessage)
+    if (errorStack) {
+      console.error("Error stack:", errorStack)
+    }
+
     return NextResponse.json(
       {
         success: false,
         message: "Failed to fetch conferences",
-        error: error.message,
-        errorName: error.name,
+        error: errorMessage,
+        errorName: errorName,
       },
       { status: 500 },
     )
