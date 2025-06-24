@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { createPayPalPayment } from "@/lib/paypal"
 import dbConnect from "@/lib/mongodb"
