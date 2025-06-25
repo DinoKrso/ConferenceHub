@@ -388,28 +388,37 @@ export default function ConferenceDetailsPage({ params }: ConferenceDetailsPageP
                 )}
               </div>
 
-              {isRegistered ? (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    You are registered for this conference!
-                  </AlertDescription>
-                </Alert>
-              ) : conference.attendees >= conference.maxAttendees ? (
-                <Alert>
-                  <Clock className="h-4 w-4" />
-                  <AlertDescription>
-                    This conference is at full capacity.
-                  </AlertDescription>
-                </Alert>
+              {/* Only show registration status or button for guests (attendees) */}
+              {isGuest ? (
+                isRegistered ? (
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      You are registered for this conference!
+                    </AlertDescription>
+                  </Alert>
+                ) : conference.attendees >= conference.maxAttendees ? (
+                  <Alert>
+                    <Clock className="h-4 w-4" />
+                    <AlertDescription>
+                      This conference is at full capacity.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Button 
+                    onClick={handleRegister} 
+                    className="w-full"
+                    disabled={enrolling}
+                  >
+                    {enrolling ? "Processing..." : "Register Now"}
+                  </Button>
+                )
               ) : (
-                <Button 
-                  onClick={handleRegister} 
-                  className="w-full"
-                  disabled={enrolling}
-                >
-                  {enrolling ? "Processing..." : "Register Now"}
-                </Button>
+                <Alert>
+                  <AlertDescription>
+                    Only attendees can register for this conference.
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
