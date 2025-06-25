@@ -29,7 +29,7 @@ interface Enrollment {
     endDate: string
     location: string
     image: string
-    category: {
+    category?: {
       name: string
     }
   }
@@ -67,7 +67,9 @@ export default function MyConferencesPage() {
         const data = await response.json()
 
         if (data.success) {
-          setEnrollments(data.data)
+          // Filter out enrollments with null conference data
+          const validEnrollments = data.data.filter((enrollment: any) => enrollment.conferenceID)
+          setEnrollments(validEnrollments)
         }
       } catch (error) {
         console.error("Error fetching enrollments:", error)
@@ -136,52 +138,59 @@ export default function MyConferencesPage() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {enrollments.map((enrollment) => (
-            <Card key={enrollment._id} className="overflow-hidden">
-              <div className="aspect-video w-full bg-muted">
-                <img
-                  src={enrollment.conferenceID.image || `/placeholder.svg?height=200&width=400`}
-                  alt={enrollment.conferenceID.title}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <CardHeader className="p-4">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="line-clamp-2 text-xl">{enrollment.conferenceID.title}</CardTitle>
-                  <Badge variant="outline" className="ml-2 shrink-0">
-                    {enrollment.conferenceID.category.name}
-                  </Badge>
+          {enrollments.map((enrollment) => {
+            // Skip enrollments with null/undefined conference data
+            if (!enrollment.conferenceID) {
+              return null
+            }
+            
+            return (
+              <Card key={enrollment._id} className="overflow-hidden">
+                <div className="aspect-video w-full bg-muted">
+                  <img
+                    src={enrollment.conferenceID.image || `/placeholder.svg?height=200&width=400`}
+                    alt={enrollment.conferenceID.title}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent className="grid gap-2 p-4 pt-0 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {formatDate(enrollment.conferenceID.startDate)} - {formatDate(enrollment.conferenceID.endDate)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{enrollment.conferenceID.location}</span>
-                </div>
-                <p className="line-clamp-2 mt-2">{enrollment.conferenceID.description}</p>
+                <CardHeader className="p-4">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="line-clamp-2 text-xl">{enrollment.conferenceID.title}</CardTitle>
+                    <Badge variant="outline" className="ml-2 shrink-0">
+                      {enrollment.conferenceID.category?.name || "Unknown"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="grid gap-2 p-4 pt-0 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {formatDate(enrollment.conferenceID.startDate)} - {formatDate(enrollment.conferenceID.endDate)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{enrollment.conferenceID.location}</span>
+                  </div>
+                  <p className="line-clamp-2 mt-2">{enrollment.conferenceID.description}</p>
 
-                <div className="mt-4 flex justify-between">
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/conferences/${enrollment.conferenceID._id}`}>View Details</Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-500 hover:text-red-600"
-                    onClick={() => setCancelId(enrollment._id)}
-                  >
-                    <X className="mr-1 h-3 w-3" /> Cancel Registration
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="mt-4 flex justify-between">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/conferences/${enrollment.conferenceID._id}`}>View Details</Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600"
+                      onClick={() => setCancelId(enrollment._id)}
+                    >
+                      <X className="mr-1 h-3 w-3" /> Cancel Registration
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
 
