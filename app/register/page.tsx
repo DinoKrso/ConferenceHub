@@ -60,6 +60,9 @@ export default function RegisterPage() {
       // Reset hCaptcha on failure
       hcaptchaRef.current?.resetCaptcha()
       setCaptchaToken(null)
+    } else {
+      // Redirect to main page after successful registration
+      router.push("/conferences")
     }
   }
 
