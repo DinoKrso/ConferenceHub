@@ -4,7 +4,7 @@ import Link from "next/link"
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -38,6 +38,8 @@ export default function RegisterPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
+  const hcaptchaRef = useRef<any>(null)
+
   // useEffect for redirect logic
   useEffect(() => {
     if (status === "authenticated") {
@@ -53,7 +55,12 @@ export default function RegisterPage() {
     if (!captchaToken) {
       return
     }
-    await registerUser(formData.name, formData.email, formData.password, formData.role, captchaToken)
+    const success = await registerUser(formData.name, formData.email, formData.password, formData.role, captchaToken)
+    if (!success) {
+      // Reset hCaptcha on failure
+      hcaptchaRef.current?.resetCaptcha()
+      setCaptchaToken(null)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -213,6 +220,7 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <Label>Security Verification</Label>
                 <HCaptcha
+                  ref={hcaptchaRef}
                   sitekey="20cc822a-9766-41ac-981a-1622e85c95be"
                   onVerify={(token) => setCaptchaToken(token)}
                   onExpire={() => setCaptchaToken(null)}
