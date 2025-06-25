@@ -70,7 +70,7 @@ GuestSchema.pre("save", async function (next) {
 })
 
 // Method to check if password matches
-GuestSchema.methods.matchPassword = async function (enteredPassword) {
+GuestSchema.methods.matchPassword = async function (enteredPassword: string): Promise<boolean> {
   return await bcrypt.compare(enteredPassword, this.password)
 }
 

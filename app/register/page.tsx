@@ -53,7 +53,7 @@ export default function RegisterPage() {
     if (!captchaToken) {
       return
     }
-    await registerUser({ ...formData, captchaToken })
+    await registerUser(formData.name, formData.email, formData.password, formData.role, captchaToken)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

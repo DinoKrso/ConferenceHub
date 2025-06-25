@@ -1,6 +1,5 @@
-export const dynamic = "force-dynamic";
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
+import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { executePayPalPayment } from "@/lib/paypal"
 import dbConnect from "@/lib/mongodb"
@@ -147,6 +146,6 @@ export async function GET(req: NextRequest) {
     }
   } catch (error) {
     console.error("PayPal success callback error:", error)
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/conferences/${conferenceId}?error=processing_failed`)
+    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/conferences?error=processing_failed`)
   }
 }

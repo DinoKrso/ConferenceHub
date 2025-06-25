@@ -75,7 +75,7 @@ UserSchema.pre("save", async function (next) {
 })
 
 // Method to check if password matches
-UserSchema.methods.matchPassword = async function (enteredPassword) {
+UserSchema.methods.matchPassword = async function (enteredPassword: string): Promise<boolean> {
   return await bcrypt.compare(enteredPassword, this.password)
 }
 
