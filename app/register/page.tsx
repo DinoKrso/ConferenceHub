@@ -37,6 +37,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
 
   const hcaptchaRef = useRef<any>(null)
 
@@ -61,8 +62,11 @@ export default function RegisterPage() {
       hcaptchaRef.current?.resetCaptcha()
       setCaptchaToken(null)
     } else {
-      // Redirect to main page after successful registration
-      router.push("/conferences")
+      // Show animation/message and redirect to login after delay
+      setRegistrationSuccess(true)
+      setTimeout(() => {
+        router.push("/login")
+      }, 2000)
     }
   }
 
@@ -78,6 +82,21 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  // Show registration success animation/message
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center">
+          <svg className="w-20 h-20 text-green-500 animate-bounce mb-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <h2 className="text-2xl font-bold mb-2 text-green-600">Registration Successful!</h2>
+          <p className="text-muted-foreground mb-4">Redirecting you to the login page...</p>
+        </div>
       </div>
     )
   }
