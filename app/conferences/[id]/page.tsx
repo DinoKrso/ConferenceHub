@@ -323,10 +323,10 @@ export default function ConferenceDetailsPage({ params }: ConferenceDetailsPageP
                 <CardTitle>Speakers</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {conference.speakersID.map((speaker) => (
-                    <div key={speaker._id} className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                    <div key={speaker._id} className="text-center">
+                      <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden bg-muted">
                         <img
                           src={speaker.profileImage || "/placeholder-user.jpg"}
                           alt={`${speaker.name} ${speaker.surname}`}
@@ -334,9 +334,9 @@ export default function ConferenceDetailsPage({ params }: ConferenceDetailsPageP
                         />
                       </div>
                       <div>
-                        <p className="font-medium">{speaker.name} {speaker.surname}</p>
+                        <p className="font-semibold text-lg">{speaker.name} {speaker.surname}</p>
                         {speaker.bio && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{speaker.bio}</p>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{speaker.bio}</p>
                         )}
                       </div>
                     </div>

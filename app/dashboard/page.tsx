@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, ChevronUp, Edit, Plus, Trash, Users } from "lucide-react"
+import { Calendar, ChevronUp, Edit, Plus, Trash, Users, Eye, X } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { useRouter } from "next/navigation"
@@ -18,6 +18,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Conference {
   _id: string
@@ -35,11 +42,34 @@ interface Conference {
   image: string
 }
 
+interface Attendee {
+  _id: string
+  enrollmentDate: string
+  status: string
+  paymentStatus: string
+  paymentMethod: string
+  attendee: {
+    _id: string
+    name: string
+    email: string
+    phoneNumber?: string
+    profileImage?: string
+    bio?: string
+    location?: string
+    company?: string
+    jobTitle?: string
+  }
+}
+
 export default function DashboardPage() {
   const [conferences, setConferences] = useState<Conference[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [showAttendeesModal, setShowAttendeesModal] = useState(false)
+  const [selectedConference, setSelectedConference] = useState<Conference | null>(null)
+  const [attendees, setAttendees] = useState<Attendee[]>([])
+  const [loadingAttendees, setLoadingAttendees] = useState(false)
   const { session, isUser } = useAuth()
   const router = useRouter()
 
@@ -106,12 +136,43 @@ export default function DashboardPage() {
     }
   }
 
+  const handleViewAttendees = async (conference: Conference) => {
+    try {
+      setLoadingAttendees(true)
+      setSelectedConference(conference)
+      setShowAttendeesModal(true)
+
+      const response = await fetch(`/api/conferences/${conference._id}/attendees`)
+      const data = await response.json()
+
+      if (data.success) {
+        setAttendees(data.data.attendees)
+      } else {
+        alert(data.message || "Failed to fetch attendees")
+      }
+    } catch (error) {
+      console.error("Error fetching attendees:", error)
+      alert("An error occurred while fetching attendees")
+    } finally {
+      setLoadingAttendees(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
+    })
+  }
+
+  const formatEnrollmentDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })
   }
 
@@ -213,6 +274,15 @@ export default function DashboardPage() {
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/conferences/${conference._id}`}>View</Link>
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewAttendees(conference)}
+                          disabled={conference.attendees === 0}
+                          title={conference.attendees === 0 ? "No attendees yet" : "View attendees"}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/conferences/edit/${conference._id}`}>
                             <Edit className="h-3 w-3" />
@@ -253,6 +323,78 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Attendees Modal */}
+      <Dialog open={showAttendeesModal} onOpenChange={setShowAttendeesModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Attendees for "{selectedConference?.title}"
+            </DialogTitle>
+            <DialogDescription>
+              {attendees.length} {attendees.length === 1 ? 'attendee' : 'attendees'} registered for this conference
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingAttendees ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading attendees...</p>
+              </div>
+            </div>
+          ) : attendees.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No attendees registered yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-md border">
+                <div className="grid grid-cols-6 border-b bg-muted/50 p-3 font-medium text-sm">
+                  <div className="col-span-2">Attendee</div>
+                  <div>Email</div>
+                  <div>Company</div>
+                  <div>Registered</div>
+                  <div>Status</div>
+                </div>
+                <div className="divide-y">
+                  {attendees.map((enrollment) => (
+                    <div key={enrollment._id} className="grid grid-cols-6 items-center p-3">
+                      <div className="col-span-2 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-muted">
+                          <img
+                            src={enrollment.attendee.profileImage || "/placeholder-user.jpg"}
+                            alt={enrollment.attendee.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{enrollment.attendee.name}</p>
+                          {enrollment.attendee.jobTitle && (
+                            <p className="text-xs text-muted-foreground">{enrollment.attendee.jobTitle}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-sm">{enrollment.attendee.email}</div>
+                      <div className="text-sm">{enrollment.attendee.company || "—"}</div>
+                      <div className="text-sm">{formatEnrollmentDate(enrollment.enrollmentDate)}</div>
+                      <div>
+                        <Badge 
+                          variant={enrollment.status === 'confirmed' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {enrollment.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
