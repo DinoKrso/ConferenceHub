@@ -33,11 +33,6 @@ export default function Footer() {
                   Speakers
                 </Link>
               </li>
-              <li>
-                <Link href="/topics" className="text-muted-foreground hover:text-foreground">
-                  Topics
-                </Link>
-              </li>
             </ul>
           </div>
           <div>

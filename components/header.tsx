@@ -51,9 +51,6 @@ export default function Header() {
                 <Link href="/speakers" className="text-sm font-medium">
                   Speakers
                 </Link>
-                <Link href="/topics" className="text-sm font-medium">
-                  Topics
-                </Link>
                 {session ? (
                   <>
                     {isUser && (
